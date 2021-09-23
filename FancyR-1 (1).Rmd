@@ -1,0 +1,488 @@
+
+```{r}
+Fancy = read.csv(file.choose())
+Fancy.ts = ts(Fancy$Sales.Volume, start = c(1987,1),frequency = 12)
+Fancy.ts
+```
+```{r}
+plot(Fancy.ts)
+```
+```{r}
+ggmonthplot(Fancy.ts)
+```
+```{r}
+ggseasonplot(Fancy.ts)
+```
+```{r}
+decompose(Fancy.ts)
+```
+```{r}
+##Additive Method
+plot(decompose(Fancy.ts))
+```
+
+```{r}
+##Multiplicative Method
+plot(decompose(Fancy.ts, type = "m"))
+```
+
+```{r}
+hist(Fancy$Sales.Volume)
+hist(decompose(Fancy.ts)$random, xlab = "Random",main = "Histogram of Additive Series")
+```
+```{r}
+hist(decompose(Fancy.ts, type= "m")$random, xlab = "Random",main = "Histogram of Multiplicative Series")
+```
+##Spltting the data into Train and Test
+```{r}
+Fancy_Train = window(Fancy.ts, start = c(1987,1), end =c(1991,12), frequency = 12)
+Fancy_Train
+```
+
+```{r}
+Fancy_Test = window(Fancy.ts, start = c(1992,1), frequency=12)
+Fancy_Test
+```
+
+```{r}
+##Simple Exponential Smoothing
+Fancy_Train_SES_Forecast = ses(Fancy_Train, h = 24)
+summary(Fancy_Train_SES_Forecast)
+```
+```{r}
+plot(Fancy_Train_SES_Forecast)
+```
+
+```{r}
+Fancy_Test_SES = cbind(Fancy_Test, Fancy_Train_SES_Forecast$mean)
+ts.plot(Fancy_Test_SES, col = c("blue", "red"), main = "Actual Vs Forecast-SES")
+```
+
+##Holt Model - Double Exponential
+```{r}
+Fancy_Train_Holt_Forecast = holt(Fancy_Train,h = 24)
+summary(Fancy_Train_Holt_Forecast)
+```
+```{r}
+plot(Fancy_Train_Holt_Forecast)
+```
+```{r}
+Fancy_Test_Holt = cbind(Fancy_Test, Fancy_Train_Holt_Forecast$mean)
+ts.plot(Fancy_Test_Holt, col = c("blue", "red"), main = "Actual Vs Forecast-Holt")
+```
+##Holt-Winters - Triple Exponential
+
+```{r}
+Fancy_Train_HW_Forecast = hw(Fancy_Train, h = 24)
+summary(Fancy_Train_HW_Forecast)
+```
+```{r}
+Fancy_Test_HW = cbind(Fancy_Test, Fancy_Train_HW_Forecast$mean)
+Fancy_Test_HW_MAPE =mean(abs(Fancy_Test_HW[,1] - Fancy_Test_HW[,2])/Fancy_Test_HW[,1])
+Fancy_Test_HW_MAPE
+```
+```{r}
+Fancy_Test_HW_RMSE = sqrt(sum(Fancy_Test_HW[,1] - Fancy_Test_HW[,2])^2)
+Fancy_Test_HW_RMSE
+```
+
+```{r}
+ts.plot(Fancy_Test_HW, col = c("blue", "red"), main = "Actual Vs Forecast - HW Additive Series")
+```
+```{r}
+Fancy_Train_HW_Forecast_M = hw(Fancy_Train, h = 24, seasonal = "m")
+Train = cbind(Fancy_Train, Fancy_Train_HW_Forecast_M$fitted)
+View(Train)
+sqrt(mean((Train[,1] - Train[,2])^2))
+summary(Fancy_Train_HW_Forecast_M)
+```
+```{r}
+Fancy_Test_HW_M = cbind(Fancy_Test, Fancy_Train_HW_Forecast_M$mean)
+Fancy_Test_HW_M_MAPE =mean(abs(Fancy_Test_HW_M[,1] - Fancy_Test_HW_M[,2])/Fancy_Test_HW_M[,1])
+Fancy_Test_HW_M_MAPE
+```
+```{r}
+View(Fancy_Test_HW_M)
+sqrt(mean((Fancy_Test_HW_M[,1] - Fancy_Test_HW_M[,2])^2))
+```
+
+```{r}
+ts.plot(Fancy_Test_HW_M, col = c("blue", "red"), main = "Actual Vs Forecast-HW-Multiplicative Series")
+
+```
+```{r}
+Fancy_Train_HW_Forecast_M1 = hw(Fancy_Train, h = 24, seasonal = "m",alpha = 0.8, beta = 0.02, gamma = 0.0001)
+summary(Fancy_Train_HW_Forecast_M1)
+```
+```{r}
+Fancy_Test_HW_M1 = cbind(Fancy_Test, Fancy_Train_HW_Forecast_M1$mean)
+Fancy_Test_HW_M1_MAPE =mean(abs(Fancy_Test_HW_M1[,1] - Fancy_Test_HW_M1[,2])/Fancy_Test_HW_M1[,1])
+Fancy_Test_HW_M1_MAPE
+```
+
+```{r}
+ts.plot(Fancy_Test_HW_M1, col = c("blue", "red"), main = "Actual Vs Forecast-HW-M1")
+```
+
+```{r}
+Fancy_HW_5Years_Additive = hw(Fancy.ts,alpha = 0.4644,beta = 0.0001, gamma = 0.0002 ,h = 60)
+summary(Fancy_HW_5Years_Additive)
+```
+```{r}
+plot(Fancy_HW_5Years_Additive)
+```
+
+```{r}
+Fancy_HW_5Years_M = hw(Fancy.ts,alpha = 0.2178,beta=0.0198, gamma = 0.0001,h = 60, seasonal = "m")
+summary(Fancy_HW_5Years_M)
+```
+```{r}
+plot(Fancy_HW_5Years_M)
+```
+```{r}
+Fancy_HW_5Years_M1 = hw(Fancy.ts,alpha = 0.8,beta=0.02, gamma = 0.0001,h = 60, seasonal = "m")
+summary(Fancy_HW_5Years_M1)
+```
+```{r}
+plot(Fancy_HW_5Years_M1)
+```
+
+```{r}
+Fancy_Train_STL = stl(Fancy_Train, s.window = 7)
+Fancy_Train_STL_Forecast= forecast(Fancy_Train_STL,method = "rwdrift", h = 24)
+summary(Fancy_Train_STL_Forecast)
+```
+```{r}
+Fancy_Test_STL = cbind(Fancy_Test, Fancy_Train_STL_Forecast$mean)
+View(Fancy_STL)
+ts.plot(Fancy_Test_STL, col = c("blue", "red"), main = "Random Walk Drift Method on Train Data")
+
+```
+```{r}
+Fancy.ts.STL = stl(Fancy.ts, s.window = 7)
+Fancy.ts.STL.Forecast= forecast(Fancy.ts.STL,method = "rwdrift", h = 60)
+summary(Fancy.ts.STL.Forecast)
+```
+
+```{r}
+plot(Fancy.ts.STL.Forecast)
+```
+
+###Dicky-Fuller Test on Original TIme Series
+```{r}
+library(tseries)
+adf.test(Fancy.ts)
+```
+```{r}
+adf.test(diff(Fancy.ts))
+```
+```{r}
+plot(diff(Fancy.ts), ylab = "First Order Difference")
+```
+```{r}
+acf(Fancy.ts, lag = 60)
+##The frequency is 12, hence every lag corresponds to 12 Months
+```
+```{r}
+pacf(Fancy.ts, lag = 60)
+```
+```{r}
+Fancy_Diff = diff(Fancy.ts)
+acf(Fancy_Diff, lag = 60)
+##There is an auto-correlation between the current year and sales 11 months ago for first-order differenced timeseries
+```
+
+```{r}
+pacf(Fancy_Diff, lag = 60)
+###Significant partial auto-correlation between the current year and sales 11 months ago
+
+```
+```{r}
+Fancy.arima = arima(Fancy.ts, c(11,1,11))
+Fancy.arima
+```
+
+
+```{r}
+hist(Fancy.arima$residuals, col = "beige")
+```
+```{r}
+Fancy.Arima.Fit = fitted(Fancy.arima)
+ts.plot(Fancy.ts, Fancy.Arima.Fit, col = c("blue", "red"))
+```
+```{r}
+Box.test(Fancy.arima$residuals, lag = 30, type = "Ljung-Box")
+```
+
+```{r}
+auto.arima(Fancy.ts)
+```
+```{r}
+ts.plot(Fancy.ts, fitted(auto.arima(Fancy.ts)),col = c("blue", "red") )
+```
+
+```{r}
+Box.test(auto.arima(Fancy.ts)$residuals, lag = 30, type = "Ljung-Box")
+```
+```{r}
+adf.test(Fancy_Train)
+```
+```{r}
+adf.test(diff(Fancy_Train))
+```
+```{r}
+acf(diff(Fancy_Train))
+```
+```{r}
+pacf(diff(Fancy_Train))
+```
+```{r}
+Fancy_Train_Arima = arima(Fancy_Train, c(12,1,12))
+summary(Fancy_Train_Arima)
+```
+```{r}
+Fancy.Arima.Train.Fit = fitted(Fancy_Train_Arima)
+ts.plot(Fancy_Train, Fancy.Arima.Train.Fit, col = c("blue", "red"), main = "Actual Train Data Vs Fitted Train Data")
+```
+```{r}
+Box.test(Fancy_Train_Arima$residuals, lag = 30, type = "Ljung-Box")
+```
+
+```{r}
+Fancy_Train_Arima_Forecast = forecast(Fancy_Train_Arima, h=24)
+Fancy_Test_Arima = cbind(Fancy_Test,Fancy_Train_Arima_Forecast$mean)
+View(Fancy_Test_Arima)
+ts.plot(Fancy_Test_Arima, col = c("blue", "red"), main = "Arima Model applied on Test Data")
+```
+```{r}
+forecast(arima(Fancy.ts, c(12,1,12)), h = 60)
+plot(forecast(arima(Fancy.ts, c(12,1,12)), h = 60), main = "Forecast for 5 Years based on ARIMA Model")
+```
+##Auto-Arima
+```{r}
+auto.arima(Fancy_Train)
+```
+```{r}
+Fancy_Train_Autoarima = forecast(auto.arima(Fancy_Train), h = 24)
+```
+```{r}
+Fancy_Test_Autoarima = cbind(Fancy_Test, Fancy_Train_Autoarima$mean)
+ts.plot(Fancy_Test_Autoarima, col = c("blue", "red"))
+```
+```{r}
+summary(Fancy_Train_Autoarima)
+```
+```{r}
+Box.test(auto.arima(Fancy_Train)$residuals, lag = 30, type = "Ljung-Box")
+```
+###SARIMA
+```{r}
+Fancy_Train_ArimaSeasonal = arima(Fancy_Train, order = c(2,1,2), seasonal = list(order = c(1,1,2), period = 12))
+```
+
+```{r}
+Fancy_Train_ArimaSeasonal
+```
+```{r}
+library(forecast)
+Fancy_Train_ArimaSeasonal_Forecast = forecast(Fancy_Train_ArimaSeasonal, h = 24)
+summary(Fancy_Train_ArimaSeasonal_Forecast)
+```
+
+```{r}
+Fancy_Test_ArimaSeasonal = cbind(Fancy_Test, Fancy_Train_ArimaSeasonal_Forecast$mean)
+ts.plot(Fancy_Test_ArimaSeasonal, col = c("blue", "red"), main = "ARIMA(2,1,2)(1,1,2)[12] Model Test Data Validation using Forecast func.")
+```
+```{r}
+Box.test(Fancy_Train_ArimaSeasonal$residuals, lag = 30, type = "Ljung-Box")
+```
+```{r}
+forecast()
+```
+
+
+```{r}
+library(forecast)
+ntest = Arima(Fancy_Test, model=Fancy_Train_ArimaSeasonal, include.drift = FALSE, include.mean = FALS)
+Fancy_ntest = cbind(Fancy_Test, ntest$fitted)
+ts.plot(Fancy_ntest, col = c("blue", "red"), main = "ARIMA(2,1,2)(1,1,2)[12] Model Test Data Validation using Arima func.")
+
+```
+```{r}
+SArima = forecast(Arima(Fancy.ts, model=Fancy_Train_ArimaSeasonal), h = 60)
+```
+
+
+```{r}
+plot(forecast(Arima(Fancy.ts, model=Fancy_Train_ArimaSeasonal), h = 60))
+
+```
+
+
+###Combined
+```{r}
+Fancy_Test_Combined = cbind(Fancy_Test,
+Fancy_Train_HW_Forecast_M$mean,
+Fancy_Train_HW_Forecast_M1$mean,
+Fancy_Train_STL_Forecast$mean,
+Fancy_Train_ArimaSeasonal_Forecast$mean, ntest$fitted)
+
+colnames(Fancy_Test_Combined) = c("TestData","HW-M","HW-M1","STL","Sarima", "SArima")
+View(Fancy_Test_Combined)
+
+View(Fancy_Test_Combined)
+getwd()
+write.csv(Fancy_Test_Combined, "Summary.csv")
+ts.plot(Fancy_Test_Combined, col = c("blue","violet","orange","black", "red", "yellow"))
+```
+```{r}
+i = 48
+pred_ets = c()
+pred_arima = c()
+while(i <= nrow(Fancy)){
+  ts <- ts(Fancy[1:i, Fancy$Sales.Volume], start=c(1987, 1), frequency=12)
+
+  pred_ets <- rbind(pred_ets, data.frame(forecast(ets(ts), 3)$mean[1:3]))
+	  pred_arima <- rbind(pred_arima, data.frame(forecast(auto.arima(ts), 3)$mean[1:3]))
+
+  i = i + 3
+}
+```
+
+
+
+
+
+
+A few line of codes below are on ARIMA which is a part of the report as outputs, but the data for these codes are a scaled version of the original data.(Attached the scaled version of the data too along with the report submission)
+
+
+
+
+
+```{r}
+
+sales <- read.csv(file.choose())
+
+sales <- ts(sales[,4], start=c(1987,1), frequency=12)
+
+plot(sales)
+```
+
+
+```{r}
+# train test split of 70- 30 
+salesTrain <- window(sales, start = c(1987,1), end = c(1991,12), frequency = 12)
+salesTest <- window(sales, start = c(1992,1), frequency=12)
+
+salesTrain
+salesTest
+plot(salesTrain)
+plot(salesTest)
+```
+
+
+```{r}
+
+library(dplyr)
+
+arima.fit <- arima(salesTrain, c(2,1,1))
+arima.fit
+summary(arima.fit)
+
+data.fit <- fitted(arima.fit)
+ts.plot(salesTrain, data.fit, col= c("blue", "red"), main = "ARIMA(2,1,1) Model: Train vs Fitted Values")
+
+
+
+
+
+arima.fit %>% forecast( h = 24) %>% autoplot() + autolayer(salesTest)
+#summary(forecast(arima.fit,h = 24))
+#plot(forecast(arima.fit,h = 24))
+
+# on test data
+ntest <- Arima(salesTest, model = arima.fit)
+ts.plot(salesTest, ntest$fitted, col= c("blue","red"))
+accuracy(ntest)
+ntest$fitted
+
+summary(ntest)
+
+ntest$fitted
+
+arima.fl <- (arima(sales, c(2,1,1)))
+
+arima.fl %>%forecast(h = 60)%>%autoplot
+```
+
+analysing residuals 
+
+```{r}
+hist(arima.fit$residuals, col = "beige")
+hist(arima.fit.test$residuals, col = "beige")
+
+```
+
+Box test 
+```{r}
+acf(arima.fit$residuals)
+acf(arima.fit.test$residuals)
+
+# box test - portmanteau  test
+
+Box.test(arima.fit$residuals, lag =5, type = "Ljung-Box")
+Box.test(arima.fit.test$residuals, lag = 6, type = "Ljung-Box")
+
+```
+
+
+```{r}
+auto.arima(salesTrain)
+```
+
+Arima Model with seasonality
+
+```{r}
+
+library(forecast)
+arima.fit.s <- arima(salesTrain, order = c(2,1,2), seasonal = list(order = c(1,1,2), period = 12))
+arima.fit.s
+accuracy(arima.fit.s)
+summary(arima.fit.s)
+
+data.fit.s <- fitted(arima.fit.s)
+ts.plot(salesTrain, data.fit.s, col= c("blue", "red"), main = "ARIMA(2,1,2)(1,1,2)[12] Train Vs Fitted Values ")
+
+arima.fit.s %>% forecast( h = 24) %>% autoplot() + autolayer(salesTest)
+#summary(forecast(arima.fit,h = 24))
+#plot(forecast(arima.fit,h = 24))
+
+# on test data
+ntest.s <- Arima(salesTest, model = arima.fit.s)
+ts.plot(salesTest, ntest.s$fitted, col = c("blue", "red"))
+ts.plot(salesTest, ntest.s$fitted, col= c("blue","red"), main = "ARIMA(2,1,2)(1,1,2)[12] Test Vs Fitted Values ")
+
+ts.plot(salesTest, col = c("blue"))
+ts.plot(ntest.s$fitted, col= c("red"))
+accuracy(ntest.s)
+
+
+plot(forecast(arima.fit.s, h = 24))
+
+
+# box test 
+Box.test(arima.fit.s$residuals, lag =5, type = "Ljung-Box")
+Box.test(ntest.s$residuals, lag = 6, type = "Ljung-Box")
+
+# forecast on entire data
+
+arima.fit.sf <- arima(sales, order = c(2,1,2), seasonal = list(order = c(1,1,2), period = 12))
+
+summary(arima.fit.sf)
+  plot(forecast(arima.fit.sf, h = 60),main = " Forecast for 5 Years using ARIMA(2,1,2)(1,1,2)[12]")
+
+forecast(arima.fit.sf, h = 60)
+```
+
+
